@@ -2,18 +2,24 @@
 
 [简体中文](README.zh-CN.md)
 
-**ACE** stands for **Atom Capability Evaluation**. It evaluates language models at the level of individual capabilities. Each
-capability, or **atom**, is tested by multiple short prompts (**probes**) across
-three difficulty levels, L1–L3. The output includes a score for every eligible
-probe, plus aggregate results by atom, category, and difficulty. This makes it
-possible to inspect the specific failures behind an aggregate score.
+**ACE** stands for **Atom Capability Evaluation**. It measures individual
+language-model capabilities, or **atoms**, and reports scores by atom,
+category, and difficulty alongside per-probe outcomes.
 
-ACE designs each probe and its scoring rule to limit the influence of
-capabilities outside the one being tested. For example, a model may solve a
-math problem and add an explanation despite an answer-only instruction.
-When the scoring rule allows extraction, ACE grades the recoverable answer.
-Probes that test instruction following or require a functional output
-structure still check those requirements.
+## Design principles
+
+- **Limit interference from other capabilities.** A model may solve a math
+  problem and add an explanation despite an answer-only instruction. When the
+  scoring rule allows extraction, ACE grades the recoverable answer. Probes
+  that test instruction following or depend on a specific output structure
+  check those requirements directly.
+- **Vary inputs and difficulty.** Multiple probes test each atom across
+  different inputs and three difficulty levels, L1–L3, to show where
+  performance changes as the task gets harder.
+- **Make scoring auditable.** ACE uses deterministic checks where possible
+  and explicit pass and fail criteria for probes that need a semantic judge.
+
+See also the [ZGCM-1 model project](https://github.com/zgcagi/ZGCM-1).
 
 ## Benchmark at a glance
 
