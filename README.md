@@ -8,6 +8,13 @@ three difficulty levels, L1–L3. The output includes a score for every eligible
 probe, plus aggregate results by atom, category, and difficulty. This makes it
 possible to inspect the specific failures behind an aggregate score.
 
+ACE designs each probe and its scoring rule to limit the influence of
+capabilities outside the one being tested. For example, a model may solve a
+math problem and add an explanation despite an answer-only instruction.
+When the scoring rule allows extraction, ACE grades the recoverable answer.
+Probes that test instruction following or require a functional output
+structure still check those requirements.
+
 ## Benchmark at a glance
 
 | Item | ACE |
