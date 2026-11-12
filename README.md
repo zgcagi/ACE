@@ -255,4 +255,7 @@ using ACE to measure held-out capability.
 
 ## License
 
-The ACE evaluator code is available under the MIT license. [Code license](LICENSE)
+ACE contributors created all probes and questions published in this repository.
+The evaluator code and the complete probe dataset, including prompts, reference
+answers, and per-probe scoring rules, are available under the MIT License.
+[Code license](LICENSE) · [Probe dataset license](benchmark/probes/LICENSE)
