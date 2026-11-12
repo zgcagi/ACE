@@ -1,0 +1,191 @@
+# ACE atom scoring policy
+#
+# Maps each atom (or atom-prefix) to a "scoring intent" + parameters.
+# The dispatcher (eval/dispatch.py) reads this and IGNORES the v1
+# probe-level scorer.type when an atom-level intent is declared.
+#
+# Available intents:
+#   extract_numeric       — find any "answer-position" number
+#   exact_integer         — one exact base-10 integer; no float conversion
+#   strict_output         — whole-response equality; no answer extraction
+#   extract_string        — find any "answer-position" string
+#   extract_string_loose  — also accept word-boundary substring (for short answers)
+#   mcq_letter            — find letter at answer position
+#   set_match             — extract set, normalize, compare
+#   sequence_match        — ordered sequence equality; order/duplicates matter
+#   abstention            — semantic uncertainty/refusal check (rich vocab)
+#   format_strict         — IF-strict regex fullmatch (instr.* only)
+#   format_lenient        — regex search with stem fallback (non-IF format)
+#   keywords_any          — any of N alternatives, word-boundary
+#   keywords_all          — all of N required, with synonyms allowed
+#   code_structural       — AST-based: must_define / must_call_any
+#   code_unittest         — actually run code
+#   json_schema           — schema with shape repair
+#   strict_json           — whole response must parse and satisfy the schema
+#   numeric_range         — number must fall in [low, high]
+#   judge_deferred        — explicit deferral; excluded from denominator
+#
+# Special: pattern "DEFAULT_BY_SCORER" in this file says:
+#   "for any atom not listed here, use the v1 probe.scorer.type but routed
+#    through the v2 smart equivalent" — see dispatch.SCORER_MAP
+
+# ----------------------------------------------------------------------------
+# Per-atom-prefix intent overrides
+# ----------------------------------------------------------------------------
+prefixes:
+
+  # Arithmetic — always "did you compute the right number?"
+  arith.*:
+    intent: extract_numeric
+
+  # Exact big-integer answers must never pass through IEEE-754 conversion.
+  arith.exact_integer_op:
+    intent: exact_integer        # compare canonical integer text, never float
+
+  # Math — always numeric answer
+  math.*:
+    intent: extract_numeric
+
+  # Read — extract a value from text. Mostly numeric/string at answer position.
+  # Defer to per-probe scorer type but route through smart extractors.
+  # (handled by DEFAULT_BY_SCORER)
+
+  # Truth — abstention/calibration is the focus; use semantic check.
+  truth.calibrated_abstention:
+    intent: abstention
+  truth.uncertainty_quantification:
+    intent: abstention
+  truth.hedging:
+    intent: abstention
+
+  # Instruction following — STRICT format checks are appropriate here.
+  # This is the ONLY category where format_strict is the default.
+  instr.format_strict_compliance:
+    intent: format_strict
+  instr.length_constraint:
+    intent: format_strict
+  instr.system_prompt_adherence:
+    intent: format_strict
+
+  # Other instr.* atoms still test specific things (keyword presence,
+  # structured output, etc.) — those probes already declare the right scorer.
+
+  # Dialog persona stability — multi-faceted, lenient regex
+  dialog.persona_stability:
+    intent: format_lenient
+  dialog.clarification_request:
+    intent: format_lenient
+  dialog.coreference_across_turns:
+    intent: format_lenient
+
+  # Code — heavy preference for structural / unittest checks
+  code.api_idiomatic_use:
+    intent: code_structural
+  code.algorithm_selection:
+    # MCQ-style — letter
+    intent: mcq_letter
+  code.signature_compliance:
+    intent: code_structural
+  code.signature_from_tests:
+    intent: code_structural
+  code.adversarial_input_construction:
+    # Free-form code with concept tokens — keep substring_all but use
+    # smart variants
+    intent: keywords_all_smart
+
+  # Tool — JSON schema with shape repair
+  tool.argument_extraction:
+    intent: json_schema
+  tool.cli_arguments:
+    intent: format_lenient
+  tool.multi_tool_coordination:
+    intent: json_schema
+  tool.tool_routing:
+    intent: json_schema
+
+  # Output — strict-output atoms must not use answer-position extraction.
+  output.unit_correct_final:
+    intent: strict_output
+  output.no_extra_text:
+    intent: strict_output
+
+  # Multimodal — without rendered media, treat as defer
+  # (We still run them but don't count them by default.)
+  multimodal.*:
+    intent: multimodal_defer
+
+  # Long context, world, know, etc. — default routing
+
+  # --------------------------------------------------------------------
+  # Atom intents for capabilities carried forward from the early benchmark
+  # --------------------------------------------------------------------
+  arith.numeric_sort:
+    intent: sequence_match       # order and duplicate positions are required
+  arith.kth_largest:
+    intent: extract_numeric
+  arith.base_conversion:
+    intent: extract_string       # case_insensitive for hex
+  arith.unit_conversion:
+    intent: extract_numeric      # tolerance encoded in scorer
+  arith.version_compare:
+    intent: extract_string       # ">" / "<" / "="
+
+  lang.classifier_concord:
+    intent: extract_string
+  lang.cipher_encoding:
+    intent: extract_string
+  lang.nth_character_extract:
+    intent: extract_string
+  lang.character_frequency:
+    intent: extract_numeric
+  lang.string_reverse:
+    intent: extract_string
+  lang.chinese_de_particle:
+    intent: mcq_letter
+  lang.multi_negation:
+    intent: extract_string
+
+  logic.game_theory:
+    intent: mcq_letter
+  logic.isomorphism_check:
+    intent: mcq_letter
+
+  read.multi_entity_attribute_memory:
+    intent: extract_string
+
+  know.brand_canonical_case:
+    intent: extract_string       # NB: case_sensitive=true at probe level
+  know.format_validity_check:
+    intent: mcq_letter
+
+# ----------------------------------------------------------------------------
+# Synonym tables for keywords_all_smart / code_structural
+# ----------------------------------------------------------------------------
+synonyms:
+  # Module aliases
+  np: [np, numpy]
+  pd: [pd, pandas]
+  plt: [plt, "matplotlib.pyplot", pyplot]
+
+  # Function-pair equivalences (yaml.dump and yaml.safe_dump are both
+  # commonly correct for "dump dict to YAML")
+  "yaml.dump": ["yaml.dump", "yaml.safe_dump"]
+  "yaml.safe_dump": ["yaml.dump", "yaml.safe_dump"]
+  "json.dump": ["json.dump", "json.dumps"]   # if context allows file/string
+  "pickle.dumps": ["pickle.dumps", "pickle.dump"]
+
+  # Common natural-language equivalences for refusal
+  refuse: ["refuse", "decline", "won't", "will not", "cannot", "can't"]
+
+# ----------------------------------------------------------------------------
+# Probes excluded from main pass-rate denominator
+# ----------------------------------------------------------------------------
+excluded_from_main_score:
+  # judge_rubric is counted when the external judge succeeds. API/configuration
+  # failures return deferred=True and are excluded dynamically.
+  scorer_types: []
+  # Multimodal cannot be evaluated without media replacement.
+  atom_prefixes:
+    - multimodal.image_understanding
+    - multimodal.audio_understanding
+    - multimodal.video_understanding

@@ -1,0 +1,26 @@
+# Copy to models.yaml and fill in the candidate endpoint, key, and model ID.
+# Set ACE_JUDGE_BASE_URL and ACE_JUDGE_API_KEY in the environment.
+
+providers:
+  candidate:
+    base_url: "https://candidate.example.com/v1"
+    api_key: "REPLACE_WITH_CANDIDATE_API_KEY"
+    description: "OpenAI-compatible candidate endpoint"
+
+default_provider: candidate
+
+models:
+  - id: "REPLACE_WITH_CANDIDATE_MODEL_ID"
+    tag: "candidate-model"
+    description: "Candidate model evaluated with ACE"
+
+eval:
+  max_tokens: 16384
+  temperature: 0.0
+  omit_temperature: false
+  retry_failed: true
+  retry_concurrency: 8
+  retry_request_timeout: 300
+  thinking_mode: false
+  no_system_prompt: false
+  request_timeout: 300

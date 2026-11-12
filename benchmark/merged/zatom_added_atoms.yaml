@@ -1,0 +1,281 @@
+# ACE capability definitions derived from the early ZATOM taxonomy.
+#
+# Each atom defines:
+#   description: capability tested (1 sentence)
+#   distinct_from: nearest existing ACE atom and why this is different
+#   default_intent: scoring intent for policy/atom_intents.yaml
+#   probe_shape: example prompt + answer-extraction expectation
+#   provenance: corresponding dimensions in the early taxonomy
+#
+# The shipped probes are in probes/zatom_added.jsonl.
+
+atoms:
+
+  arith.numeric_sort:
+    description: |
+      Sort a small list of numbers in the requested direction (ascending or
+      descending) and return the comma-separated sequence.
+    distinct_from: |
+      lang.lexicographic_order is alphabet sorting; this is NUMERIC sort.
+      arith.compare_quantities only tests pairwise comparison.
+    default_intent: sequence_match         # order and duplicate positions matter
+    probe_shape: |
+      "Sort ascending: 28, 89, 73, 61, 35"  →  "28, 35, 61, 73, 89"
+    provenance: ZATOM D7
+
+  arith.kth_largest:
+    description: |
+      Return the k-th largest element of a list (k = 1..len). Tests selection
+      independent of full sorting.
+    distinct_from: |
+      arith.numeric_sort returns the entire list; this returns one element.
+    default_intent: extract_numeric
+    probe_shape: |
+      "What is the 2nd largest of: 14, 27, 89, 51, 32?"  →  "51"
+    provenance: ZATOM D8
+
+  arith.base_conversion:
+    description: |
+      Convert an integer between bases (2/8/10/16). Tests symbolic
+      transformation and digit-position semantics.
+    distinct_from: |
+      math.modular_arithmetic is mod operations; this is positional rebase.
+    default_intent: extract_string         # answer is a string of digits
+    probe_shape: |
+      "Convert decimal 42 to binary."  →  "101010"
+    provenance: ZATOM D10
+
+  arith.unit_conversion:
+    description: |
+      Apply a unit-conversion ratio (km↔mi, kg↔lb, °C↔°F). Tests recall +
+      arithmetic, separate from the format question.
+    distinct_from: |
+      output.unit_correct_final tests "remembers to attach the unit"; this
+      tests "compute the conversion correctly".
+    default_intent: extract_numeric        # tolerance often >0
+    probe_shape: |
+      "How many kilometers is 5 miles?"  →  "8.05" (tolerance ±0.1)
+    provenance: ZATOM D9
+
+  arith.version_compare:
+    description: |
+      Compare two semver-style version strings ("1.4.10" vs "1.4.2") and
+      return which is greater (or equal).
+    distinct_from: |
+      arith.compare_quantities is plain numeric. Semver requires
+      component-wise comparison with non-numeric semantics (1.10 > 1.9).
+    default_intent: mcq_letter             # report >/=/< via letter or word
+    probe_shape: |
+      "Compare 1.4.10 vs 1.4.2 (output >, <, or =)."  →  ">"
+    provenance: ZATOM D42
+
+
+  lang.classifier_concord:
+    description: |
+      Pick the correct measure word/classifier for a noun in a given
+      language. In Chinese: 一__马 (匹/只/条/头) → 匹. In English: a __
+      of paper (sheet/piece/...).
+    distinct_from: |
+      lang.referential_grounding is reference resolution. This is a
+      lexical-syntactic concord test.
+    default_intent: extract_string
+    probe_shape: |
+      "在'一__鱼'中横线处填什么量词？"  →  "条"
+    provenance: ZATOM D16
+
+  lang.cipher_encoding:
+    description: |
+      Encode/decode under a simple symbolic cipher: Caesar shift, ROT13,
+      base64, hex. Tests symbolic manipulation under a stated rule.
+    distinct_from: |
+      lang.translation_pair is natural-language translation. This is
+      structural encoding under an explicit transformation.
+    default_intent: extract_string
+    probe_shape: |
+      "Caesar +3 of 'HELLO' is?"  →  "KHOOR"
+    provenance: ZATOM D19
+
+  lang.nth_character_extract:
+    description: |
+      Return the k-th character of a given string. Famously hard for
+      tokenizer-based LLMs.
+    distinct_from: |
+      lang.lexicographic_order tests sorting; this tests indexing.
+    default_intent: extract_string
+    probe_shape: |
+      "What is the 4th character of 'BENCHMARK'?"  →  "C"
+    provenance: ZATOM D29
+
+  lang.character_frequency:
+    description: |
+      Count occurrences of a target character (or class) in a string.
+      Tests stable token-aware counting.
+    distinct_from: |
+      arith.exact_integer_op is general counting; this requires
+      character-level tokenization aware of casing/diacritics.
+    default_intent: extract_numeric
+    probe_shape: |
+      "How many 'r's are in 'strawberry'?"  →  "3"
+    provenance: ZATOM D31
+
+  lang.string_reverse:
+    description: |
+      Reverse a string at the character level (preserving multi-byte
+      Unicode chars as units).
+    distinct_from: |
+      No close existing atom.
+    default_intent: extract_string
+    probe_shape: |
+      "Reverse 'ACEv2'."  →  "2vECA"
+    provenance: ZATOM D32
+
+  lang.chinese_de_particle:
+    description: |
+      Distinguish Chinese 的 / 地 / 得 in given sentences. Native-speaker
+      grammatical-role discrimination, the most common Chinese style error.
+    distinct_from: |
+      No equivalent. ACE has no Chinese-particle test.
+    default_intent: mcq_letter
+    probe_shape: |
+      "他___高兴___跳起来。横线处分别填？(A)的,的 (B)地,得 (C)得,的"  →  "B"
+    provenance: ZATOM D47
+
+  lang.multi_negation:
+    description: |
+      Resolve stacked negation: e.g. 不可能不去 means 一定去. English: "I
+      cannot not go" → "I will go".
+    distinct_from: |
+      lang.polarity_clash tests one polarity flip; this tests stacked.
+    default_intent: extract_string
+    probe_shape: |
+      "Simplify the polarity: '不是没有可能不参加'. Reply 是/否/不一定."
+    provenance: ZATOM D18
+
+
+  logic.game_theory:
+    description: |
+      Identify the dominant strategy / Nash equilibrium / minimax move in
+      a small game (e.g. 2-player payoff matrix or simple sequential game).
+    distinct_from: |
+      causal.intervention_prediction is prediction under intervention;
+      this is strategic reasoning under opponent's best response.
+    default_intent: mcq_letter
+    probe_shape: |
+      Payoff matrix prompt → "Player 1's dominant strategy is?"
+    provenance: ZATOM D23
+
+  logic.rule_induction:
+    description: |
+      Induce a rule from a small set of input/output examples and apply
+      it to a held-out input.
+    distinct_from: |
+      logic.deductive_chain works from rule to instance; this works from
+      instances to rule. Distinct cognitive operation (induction vs deduction).
+    default_intent: extract_string
+    probe_shape: |
+      "Examples: 2→5, 3→7, 4→9. What's f(10)?"  →  "21"
+    provenance: ZATOM D36
+
+  logic.liar_puzzle:
+    description: |
+      Determine truth-value of speakers in knights-and-knaves style
+      puzzles where some speakers always lie / always tell truth.
+    distinct_from: |
+      logic.deductive_chain is propositional. This requires modeling each
+      speaker's truth-state as a variable.
+    default_intent: extract_string
+    probe_shape: |
+      "A says 'B is a liar.' B says 'I am a truth-teller.' Who is the
+      liar?"  →  "A" or "B" or "Both" or "Cannot tell"
+    provenance: ZATOM D48
+
+  logic.isomorphism_check:
+    description: |
+      Decide whether two structures (graphs, mappings, mini-formal systems)
+      are isomorphic.
+    distinct_from: |
+      No close atom. Abstract structural reasoning.
+    default_intent: mcq_letter
+    probe_shape: |
+      "Are these two graphs isomorphic? (A)Yes (B)No"  →  letter
+    provenance: ZATOM D49
+
+
+  read.table_lookup:
+    description: |
+      Given a table (key→value), find the value for a given key. Trivial
+      retrieval but stress-tests positional reading on tabular data.
+    distinct_from: |
+      read.formal_notation_parse handles JSON/YAML structures; this is
+      pure tabular k→v lookup.
+    default_intent: extract_string
+    probe_shape: |
+      "From the table | a | 1 | / | b | 2 | / | c | 3 | what is b?"  →  "2"
+    provenance: ZATOM D33
+
+  read.multi_entity_attribute_memory:
+    description: |
+      Given facts about N entities × K attributes, answer a query targeting
+      a specific (entity, attribute) cell.
+    distinct_from: |
+      read.identify_query tests single-fact retrieval; this requires
+      maintaining an N×K table mentally.
+    default_intent: extract_string
+    probe_shape: |
+      "Alice likes blue. Bob likes red. Carol owns a dog.
+       What does Alice like?"  →  "blue"
+    provenance: ZATOM D2
+
+
+  know.brand_canonical_case:
+    description: |
+      Recall the canonical capitalization of well-known brand/product names
+      (iPhone, eBay, macOS, npm, JavaScript, GitHub).
+    distinct_from: |
+      instr.case_uniformity tests user-imposed casing rules. This is
+      knowledge of the canonical form, no rule given.
+    default_intent: extract_string         # case_sensitive
+    probe_shape: |
+      "Write the canonical capitalization of the Apple smartphone brand."
+                                                                  → "iPhone"
+    provenance: ZATOM D38
+
+  know.format_validity_check:
+    description: |
+      Decide whether a given string is a valid example of a known format
+      (email, IPv4 address, URL, ISO-8601 date, semver, hex color).
+    distinct_from: |
+      instr.format_compliance tests "did you follow the user's format
+      rule?"; this tests "is this a syntactically valid X?"
+    default_intent: mcq_letter
+    probe_shape: |
+      "Is '198.51.100.300' a valid IPv4 address? (A)Yes (B)No"  →  "B"
+    provenance: ZATOM D43
+
+
+# ----------------------------------------------------------------------------
+# Atom-extension notes (NOT new atoms, just guidance for future probe authors)
+# ----------------------------------------------------------------------------
+extensions:
+
+  world.naive_physics:
+    extend_with_axes:
+      - economic_plausibility    # ZATOM D39 — is a price reasonable?
+      - duration_plausibility    # ZATOM D40 — is a duration reasonable?
+      - magnitude_plausibility   # ZATOM D46 — order-of-magnitude common sense
+    rationale: |
+      These are all variants of "real-world sanity check" and don't merit
+      separate atoms; they share scoring infrastructure (numeric_range or
+      mcq_letter). Add 2-3 probes per axis when generating future probes.
+
+  lang.lexical_edit_recognition:
+    extend_with_axes:
+      - chinese_typo             # ZATOM D37 — 错别字 (homophone substitution)
+    rationale: |
+      Chinese typo detection is a sub-flavor of edit-recognition.
+
+  logic.constraint_satisfaction:
+    extend_with_axes:
+      - conditional_counting     # ZATOM D6 — count items satisfying a filter
+    rationale: |
+      Counting under constraints is a special CSP. Add as an axis.
