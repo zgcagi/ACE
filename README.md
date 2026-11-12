@@ -1,6 +1,6 @@
 # ACE 2.6.4
 
-[简体中文](README.zh-CN.md)
+[简体中文](README.zh-CN.md) · [Visualization tutorial](examples/tutorial.md)
 
 **ACE** stands for **Atom Capability Evaluation**. It measures individual
 language-model capabilities, or **atoms**, and reports scores by atom,
@@ -225,7 +225,7 @@ with `python3 -m http.server 8000 --bind 127.0.0.1` and open
 `http://127.0.0.1:8000/frontend/` to browse three archived ACE 2.6.4
 results without API credentials. These aggregate samples use the historical
 2,503-probe scoring scope. Current public runs score 2,489 probes.
-[Visualization tutorial (Chinese)](examples/tutorial.zh-CN.md) ·
+[Visualization tutorial](examples/tutorial.md) ·
 [Sample results](examples/results/)
 
 ## Read or extend the dataset

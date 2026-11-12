@@ -1,5 +1,7 @@
 # 用 ACE 前端对比模型
 
+[English](tutorial.md)
+
 在仓库根目录启动本地 HTTP 服务，再打开 `http://127.0.0.1:8000/frontend/`。页面默认读取随仓库提供的三份汇总结果。浏览器需要能加载页面指定版本的 Vue 和 ECharts，查看样例无需评测后端或 API 密钥。
 
 ```bash
@@ -35,6 +37,14 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 ![Compare 对比表展开 instr 的三个难度层级](figures/compare-matrix.png)
 
-### 连接评测平台 API
+## 4. 并排查看同一道题的回答
+
+连接兼容后端后，在 `Compare` 选择模型并点击 **分析**。在表中依次展开类别、原子能力和难度，就能看到题面、参考答案、每个模型的原始回答和通过判定。
+
+下图使用同一批历史评测中 `arith.percent_of.L2.001` 的真实回答。DeepSeek V4 Flash 直接回答 `7.5`，GPT-4o 回答 `7`，ZGCM-7B Thinking 在回答中给出计算步骤，最后得到 `7.5`。当时的评分器从 ZGCM-7B Thinking 回答的最后一行提取了数值，并判为通过。
+
+![ACE 前端并排显示一道百分比题的题面、参考答案、三个模型的回答与通过判定](figures/compare-probe.png)
+
+## 连接评测平台 API
 
 在同源部署中，将 API 挂载到前端目录的同级 `/api` 路径。例如前端位于 `/frontend/` 时，API 位于 `/api`。在前端页面 URL 中加上 `?mode=api`，在侧栏输入平台访问令牌，然后打开所需页面或刷新页面内的数据。逐题对比、诊断、运行管理和 Playground 使用兼容后端的接口。

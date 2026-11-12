@@ -1,6 +1,6 @@
 # ACE 2.6.4 原子能力评测
 
-[English](README.md)
+[English](README.md) · [可视化教程](examples/tutorial.zh-CN.md)
 
 **ACE** 全称 **Atom Capability Evaluation**，即原子能力评测。ACE 将语言模型的能力拆分为可单独评测的原子能力（atom），提供逐题判定，以及按原子能力、类别和难度汇总的结果。
 
